@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 
 FILE *f = NULL;
 
@@ -7,8 +8,14 @@ int count_bytes()
 {
 	char buf[1024];
 	int count = 0, chunk = 0;
+	FILE *input = NULL;
 
-	while (chunk = fread(&buf, sizeof(char), 1024, f))
+	if (f) 
+		input = f;
+	else
+		input = stdin;
+
+	while (chunk = fread(&buf, sizeof(char), 1024, input))
 		count += chunk;
 
 	return count;
@@ -18,8 +25,14 @@ int count_lines()
 {
 	char buf = '\0';
 	int count = 0;
+	FILE *input = NULL;
 
-	while ((buf = fgetc(f)) != EOF) //Could be faster to use getline or fgets, but then have to mess around a lot more with buffers
+	if (f)
+		input = f;
+	else
+		input = stdin;
+
+	while ((buf = fgetc(input)) != EOF) //Could be faster to use getline or fgets, but then have to mess around a lot more with buffers
 		if (buf == '\n') 
 			count++;
 
@@ -31,8 +44,14 @@ int count_words()
 {
 	char buf = '\0';
 	int count = 0, flag = 0;
+	FILE *input = NULL;
 
-	while ((buf = fgetc(f)) != EOF)
+	if (f)
+		input = f;
+	else
+		input = stdin;
+
+	while ((buf = fgetc(input)) != EOF)
 	{
 		if (buf < 0)
 		{
@@ -54,8 +73,6 @@ int count_words()
 	return count;
 }
 
-
-
 int open_file(const char *path)
 {
 	int opened = fopen_s(&f, path, "r");
@@ -68,6 +85,23 @@ int open_file(const char *path)
 	return 0;
 }
 
+void do_flag(char flag)
+{
+	switch (flag) {
+	case 'c':
+		printf("%d characters in file.\n", count_bytes());
+		break;
+	case 'l':
+		printf("%d lines in file.\n", count_lines());
+		break;
+	case 'w':
+		printf("%d words in file.\n", count_words());
+		break;
+	default:
+		printf("Please enter a valid flag: -c, -l, -w\n");
+	}
+}
+
 int main (int argc, char **argv)
 {
 	if (argc == 1)
@@ -77,6 +111,7 @@ int main (int argc, char **argv)
 		if (argv[1][0] == '-')
 		{
 			//flag passed in, but no filepath, so get data from stdin
+			do_flag(argv[1][1]);
 		}
 		else //Byte, line, and word count for the file
 		{
@@ -100,19 +135,7 @@ int main (int argc, char **argv)
 			if (open_file(argv[2]) != 0)
 				return 1;
 
-			switch (argv[1][1]) {
-			case 'c':
-				printf("%d characters in file.\n", count_bytes());
-				break;
-			case 'l':
-				printf ("%d lines in file.\n", count_lines());
-				break;
-			case 'w':
-				printf("%d words in file.\n", count_words());
-				break;
-			default:
-				printf ("Please enter a valid flag: -c, -l, -w\n");
-			}
+			do_flag(argv[1][1]);
 		}
 		else
 			printf("Second argument should be passed in as a flag; -c, -l, -w\n");
@@ -121,6 +144,8 @@ int main (int argc, char **argv)
 	else
 		printf("Please pass one flag (-c, -l, -w) and/or a file, only.\n");
 
-	fclose(f);
+	if (f)
+		fclose(f);
+
 	return 0;
 }
